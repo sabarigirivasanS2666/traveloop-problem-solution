@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Traveloop{% endblock %}
+{% block content %}
+<section class="page-head split">
+    <div>
+        <span class="eyebrow">Dashboard</span>
+        <h1>Welcome, {{ current_user.name }}</h1>
+        <p>View upcoming trips, explore popular cities, and continue planning.</p>
+    </div>
+    <div class="button-row">
+        <a class="btn ghost" href="{{ url_for('bookings') }}">Manage Bookings</a>
+        <a class="btn primary" href="{{ url_for('create_trip') }}">+ Plan New Trip</a>
+    </div>
+</section>
+
+<section class="stats-grid">
+    <div class="stat-card"><span>Recent Trips</span><strong>{{ trips|length }}</strong></div>
+    <div class="stat-card"><span>Budget Highlight</span><strong>₹ {{ '%.2f'|format(total_budget) }}</strong></div>
+    <div class="stat-card"><span>Recommended Cities</span><strong>{{ cities|length }}</strong></div>
+    <div class="stat-card"><span>Total Bookings</span><strong>{{ booking_count }}</strong></div>
+</section>
+
+<section class="quick-actions">
+    <a class="action-card" href="{{ url_for('create_trip') }}">
+        <strong>Plan New Trip</strong>
+        <span>Create travel dates, budgets and destinations.</span>
+    </a>
+    <a class="action-card" href="{{ url_for('bookings') }}">
+        <strong>Booking</strong>
+        <span>Store hotel, transport and activity booking details.</span>
+    </a>
+    <a class="action-card" href="{{ url_for('trips') }}">
+        <strong>My Trips</strong>
+        <span>Open existing itineraries and add bookings.</span>
+    </a>
+</section>
+
+<section class="two-col">
+    <div class="panel">
+        <div class="section-title">
+            <h2>Recent / Upcoming Trips</h2>
+            <a href="{{ url_for('trips') }}">View all</a>
+        </div>
+        {% if trips %}
+            <div class="trip-list compact">
+                {% for trip in trips %}
+                    <a class="trip-row" href="{{ url_for('trip_detail', trip_id=trip.id) }}">
+                        <div>
+                            <strong>{{ trip.name }}</strong>
+                            <small>{{ trip.start_date }} → {{ trip.end_date }}</small>
+                        </div>
+                        <span>{{ trip.destination_count }} stops</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <h3>No trips yet</h3>
+                <p>Create your first itinerary with cities, activities and budgets.</p>
+                <a class="btn primary" href="{{ url_for('create_trip') }}">Create Trip</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <div class="section-title"><h2>Popular Cities</h2></div>
+        <div class="city-list">
+            {% for city in cities %}
+                <div class="city-card">
+                    <div>
+                        <strong>{{ city.name }}</strong>
+                        <small>{{ city.country }} • {{ city.region }}</small>
+                    </div>
+                    <div class="city-meta">
+                        <span>Cost {{ city.cost_index }}</span>
+                        <span>Popularity {{ city.popularity }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+<section class="panel">
+    <div class="section-title">
+        <h2>Upcoming Bookings</h2>
+        <a href="{{ url_for('bookings') }}">View all</a>
+    </div>
+    {% if upcoming_bookings %}
+        <div class="simple-table-wrap">
+            <table class="simple-table">
+                <thead><tr><th>Trip</th><th>Type</th><th>Provider</th><th>Date</th><th>Status</th><th>Cost</th></tr></thead>
+                <tbody>
+                {% for booking in upcoming_bookings %}
+                    <tr>
+                        <td>{{ booking.trip_name }}</td>
+                        <td>{{ booking.booking_type }}</td>
+                        <td>{{ booking.provider }}</td>
+                        <td>{{ booking.start_date or '-' }}</td>
+                        <td><span class="badge">{{ booking.status }}</span></td>
+                        <td>₹{{ '%.2f'|format(booking.cost or 0) }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state inline"><p>No bookings added yet. Open any trip and use the Booking section.</p></div>
+    {% endif %}
+</section>

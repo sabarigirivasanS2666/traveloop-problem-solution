@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Profile - Traveloop{% endblock %}
+{% block content %}
+<section class="page-head">
+    <span class="eyebrow">User Profile / Settings</span>
+    <h1>Manage your account</h1>
+    <p>Update profile information, travel preferences and privacy settings.</p>
+</section>
+
+<section class="two-col">
+    <form class="panel form-grid" method="post" enctype="multipart/form-data">
+        <div class="field wide">
+            <label>Name</label>
+            <input type="text" name="name" value="{{ user.name }}" required>
+        </div>
+        <div class="field wide">
+            <label>Email</label>
+            <input type="email" name="email" value="{{ user.email }}" required>
+        </div>
+        <div class="field">
+            <label>Language Preference</label>
+            <select name="language">
+                {% for lang in ['English', 'Tamil', 'Hindi', 'French', 'Japanese'] %}
+                    <option value="{{ lang }}" {% if user.language == lang %}selected{% endif %}>{{ lang }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="field">
+            <label>Profile Photo</label>
+            <input type="file" name="photo" accept="image/*">
+        </div>
+        <div class="field wide">
+            <label>Saved Destinations</label>
+            <textarea name="saved_destinations" rows="4" placeholder="Example: Goa, Singapore, Ooty">{{ user.saved_destinations }}</textarea>
+        </div>
+        <div class="form-actions wide"><button class="btn primary" type="submit">Update Profile</button></div>
+    </form>
+
+    <div class="panel profile-side">
+        {% if user.photo %}
+            <img class="avatar" src="{{ url_for('static', filename='uploads/' ~ user.photo) }}" alt="Profile photo">
+        {% else %}
+            <div class="avatar placeholder">{{ user.name[0]|upper }}</div>
+        {% endif %}
+        <h2>{{ user.name }}</h2>
+        <p>{{ user.email }}</p>
+        <span class="badge">{{ user.role|title }}</span>
+        <hr>
+        <h3>Privacy</h3>
+        <p>You can delete your local account and all related trips from this SQLite database.</p>
+        <form method="post" action="{{ url_for('delete_account') }}" onsubmit="return confirm('Delete your account and all trips permanently from local database?')">
+            <button class="btn danger" type="submit">Delete Account</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

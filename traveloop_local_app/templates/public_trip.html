@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Public Itinerary - {{ trip.name }}{% endblock %}
+{% block content %}
+<section class="page-head split">
+    <div>
+        <span class="eyebrow">Public Itinerary</span>
+        <h1>{{ trip.name }}</h1>
+        <p>Created by {{ trip.owner_name }} • {{ trip.start_date }} → {{ trip.end_date }}</p>
+        <p>{{ trip.description }}</p>
+    </div>
+    {% if current_user %}
+        <form method="post" action="{{ url_for('copy_trip', slug=trip.public_slug) }}">
+            <button class="btn primary" type="submit">Copy Trip</button>
+        </form>
+    {% else %}
+        <a class="btn primary" href="{{ url_for('login') }}">Login to Copy</a>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <div class="section-title"><h2>Itinerary Summary</h2></div>
+    <div class="timeline readonly">
+        {% for item in stop_data %}
+            <article class="timeline-item">
+                <div class="timeline-dot">{{ loop.index }}</div>
+                <div class="timeline-card">
+                    <h3>{{ item.stop.city_name }}</h3>
+                    <p>{{ item.stop.start_date }} → {{ item.stop.end_date }}</p>
+                    {% for activity in item.activities %}
+                        <div class="day-activity">
+                            <strong>{{ activity.activity_time or 'Flexible' }} - {{ activity.title }}</strong>
+                            <span>{{ activity.category }} • ₹{{ '%.2f'|format(activity.cost or 0) }}</span>
+                        </div>
+                    {% else %}
+                        <p class="muted">No activities listed.</p>
+                    {% endfor %}
+                </div>
+            </article>
+        {% else %}
+            <p>No stops added.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-title"><h2>Budget Summary</h2></div>
+    <div class="stats-grid">
+        <div class="stat-card"><span>Transport</span><strong>₹ {{ '%.2f'|format(budget.transport) }}</strong></div>
+        <div class="stat-card"><span>Stay</span><strong>₹ {{ '%.2f'|format(budget.stay) }}</strong></div>
+        <div class="stat-card"><span>Meals</span><strong>₹ {{ '%.2f'|format(budget.meals) }}</strong></div>
+        <div class="stat-card"><span>Activities</span><strong>₹ {{ '%.2f'|format(budget.activities) }}</strong></div>
+        <div class="stat-card"><span>Total</span><strong>₹ {{ '%.2f'|format(budget.total) }}</strong></div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-title"><h2>Social Sharing</h2><p>Copy the URL from your browser and share it with friends.</p></div>
+    <div class="share-buttons">
+        <a class="btn ghost" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u={{ url_for('public_trip', slug=trip.public_slug, _external=True) }}">Facebook</a>
+        <a class="btn ghost" target="_blank" href="https://twitter.com/intent/tweet?text=Check%20my%20Traveloop%20itinerary&url={{ url_for('public_trip', slug=trip.public_slug, _external=True) }}">X / Twitter</a>
+        <a class="btn ghost" target="_blank" href="https://api.whatsapp.com/send?text={{ url_for('public_trip', slug=trip.public_slug, _external=True) }}">WhatsApp</a>
+    </div>
+</section>
+{% endblock %}

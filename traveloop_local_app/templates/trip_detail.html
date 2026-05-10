@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% block title %}{{ trip.name }} - Traveloop{% endblock %}
+{% block content %}
+<section class="trip-hero">
+    {% if trip.cover_photo %}
+        <img src="{{ url_for('static', filename='uploads/' ~ trip.cover_photo) }}" alt="{{ trip.name }} cover">
+    {% endif %}
+    <div>
+        <span class="eyebrow">Trip Workspace</span>
+        <h1>{{ trip.name }}</h1>
+        <p>{{ trip.description or 'Build your day-wise travel plan by adding stops, activities, budgets, checklist items and notes.' }}</p>
+        <div class="badge-row">
+            <span class="badge">{{ trip.start_date }} → {{ trip.end_date }}</span>
+            <span class="badge">{{ budget.days }} days</span>
+            <span class="badge">₹ {{ '%.2f'|format(budget.total) }} total</span>
+            {% if trip.is_public %}<span class="badge success">Public sharing on</span>{% endif %}
+        </div>
+    </div>
+</section>
+
+<div class="anchor-nav">
+    <a href="#itinerary">Itinerary Builder</a>
+    <a href="#view">Itinerary View</a>
+    <a href="#cities">City Search</a>
+    <a href="#activities">Activity Search</a>
+    <a href="#bookings">Booking</a>
+    <a href="#budget">Budget</a>
+    <a href="#checklist">Checklist</a>
+    <a href="#notes">Notes</a>
+    <a href="#share">Share</a>
+</div>
+
+<section id="itinerary" class="panel">
+    <div class="section-title">
+        <div><h2>Itinerary Builder</h2><p>Add cities, travel dates, activities and reorder using position numbers.</p></div>
+    </div>
+    <form class="form-grid compact-form" method="post" action="{{ url_for('add_stop', trip_id=trip.id) }}">
+        <div class="field"><label>Select City</label>
+            <select name="city_id">
+                <option value="">Choose from city list</option>
+                {% for city in cities %}
+                    <option value="{{ city.id }}">{{ city.name }} - {{ city.country }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="field"><label>Or Custom City</label><input type="text" name="custom_city" placeholder="Example: Ooty"></div>
+        <div class="field"><label>Stop Start</label><input type="date" name="start_date" value="{{ trip.start_date }}" required></div>
+        <div class="field"><label>Stop End</label><input type="date" name="end_date" value="{{ trip.end_date }}" required></div>
+        <div class="field"><label>Order</label><input type="number" name="position" value="1" min="1"></div>
+        <div class="field wide"><label>Stop Notes</label><input type="text" name="notes" placeholder="Hotel area, station details, etc."></div>
+        <div class="form-actions wide"><button class="btn primary" type="submit">+ Add Stop</button></div>
+    </form>
+
+    {% if stop_data %}
+        <div class="timeline">
+            {% for item in stop_data %}
+                <article class="timeline-item">
+                    <div class="timeline-dot">{{ loop.index }}</div>
+                    <div class="timeline-card">
+                        <div class="split">
+                            <div>
+                                <h3>{{ item.stop.city_name }}</h3>
+                                <p>{{ item.stop.start_date }} → {{ item.stop.end_date }} • Position {{ item.stop.position }}</p>
+                                {% if item.stop.notes %}<small>{{ item.stop.notes }}</small>{% endif %}
+                            </div>
+                            <form method="post" action="{{ url_for('delete_stop', stop_id=item.stop.id) }}" onsubmit="return confirm('Delete this stop and its activities?')">
+                                <button class="btn small danger" type="submit">Delete Stop</button>
+                            </form>
+                        </div>
+                        {% if item.activities %}
+                            <div class="activity-pills">
+                                {% for activity in item.activities %}
+                                    <span>{{ activity.title }} • ₹{{ '%.2f'|format(activity.cost or 0) }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="muted">No activities added yet.</p>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state inline"><p>No stops yet. Add your first city above.</p></div>
+    {% endif %}
+</section>
+
+<section id="view" class="panel">
+    <div class="section-title split">
+        <div><h2>Itinerary View</h2><p>Review the complete plan in list or calendar-style layout.</p></div>
+        <div class="toggle-group">
+            <button class="btn small ghost" type="button" onclick="setItineraryView('list')">List</button>
+            <button class="btn small ghost" type="button" onclick="setItineraryView('calendar')">Calendar</button>
+        </div>
+    </div>
+    <div id="itineraryList" class="view-block">
+        {% for item in stop_data %}
+            <div class="day-card">
+                <h3>{{ item.stop.city_name }}</h3>
+                <small>{{ item.stop.start_date }} to {{ item.stop.end_date }}</small>
+                {% for activity in item.activities %}
+                    <div class="day-activity">
+                        <strong>{{ activity.activity_time or 'Flexible time' }} - {{ activity.title }}</strong>
+                        <span>{{ activity.category }} • {{ activity.duration_hours }} hr • ₹{{ '%.2f'|format(activity.cost or 0) }}</span>
+                    </div>
+                {% else %}
+                    <p class="muted">No activity scheduled.</p>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="muted">Your itinerary will appear here after adding stops.</p>
+        {% endfor %}
+    </div>
+    <div id="itineraryCalendar" class="calendar-view hidden">
+        {% for item in stop_data %}
+            <div class="calendar-box">
+                <span>{{ item.stop.start_date }}</span>
+                <strong>{{ item.stop.city_name }}</strong>
+                <small>{{ item.activities|length }} activities</small>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section id="cities" class="panel">
+    <div class="section-title"><h2>City Search</h2><p>Find destinations using country, region, cost index and popularity.</p></div>
+    <div class="search-row">
+        <input id="citySearch" type="search" placeholder="Search by city, country or region" oninput="filterCities()">
+        <select id="countryFilter" onchange="filterCities()">
+            <option value="">All countries</option>
+            {% for city in cities|unique(attribute='country') %}
+                <option value="{{ city.country }}">{{ city.country }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="city-grid" id="cityGrid">
+        {% for city in cities %}
+            <article class="city-tile" data-search="{{ city.name }} {{ city.country }} {{ city.region }}" data-country="{{ city.country }}">
+                <h3>{{ city.name }}</h3>
+                <p>{{ city.description }}</p>
+                <div class="city-meta">
+                    <span>{{ city.country }}</span>
+                    <span>Cost {{ city.cost_index }}</span>
+                    <span>Popularity {{ city.popularity }}</span>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section id="activities" class="panel">
+    <div class="section-title"><h2>Activity Search</h2><p>Browse templates or create your own activity for each stop.</p></div>
+    <div class="search-row">
+        <input id="activitySearch" type="search" placeholder="Search activities by title/category/city" oninput="filterActivities()">
+        <select id="activityCostFilter" onchange="filterActivities()">
+            <option value="all">All costs</option>
+            <option value="free">Free</option>
+            <option value="low">Below ₹1000</option>
+            <option value="high">₹1000 and above</option>
+        </select>
+    </div>
+    <div class="activity-template-grid" id="activityTemplateGrid">
+        {% for template in templates %}
+            <div class="activity-template" data-search="{{ template.title }} {{ template.category }} {{ template.city_name }}" data-cost="{{ template.cost }}">
+                <strong>{{ template.title }}</strong>
+                <small>{{ template.city_name }} • {{ template.category }} • {{ template.duration_hours }} hr</small>
+                <p>{{ template.description }}</p>
+                <span>Estimated cost: ₹{{ '%.2f'|format(template.cost) }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if stop_data %}
+        {% for item in stop_data %}
+            <details class="stop-activity-form" {% if loop.first %}open{% endif %}>
+                <summary>Add activity to {{ item.stop.city_name }}</summary>
+                <form class="form-grid compact-form" method="post" action="{{ url_for('add_activity', stop_id=item.stop.id) }}">
+                    <div class="field wide"><label>Add from Template</label>
+                        <select name="template_id">
+                            <option value="">Use custom activity instead</option>
+                            {% for template in templates %}
+                                <option value="{{ template.id }}">{{ template.title }} - {{ template.city_name }} - ₹{{ '%.0f'|format(template.cost) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field"><label>Custom Title</label><input type="text" name="title" placeholder="Example: Food tour"></div>
+                    <div class="field"><label>Category</label>
+                        <select name="category">
+                            <option>Sightseeing</option><option>Food</option><option>Culture</option><option>Adventure</option><option>Nature</option><option>Shopping</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>Date</label><input type="date" name="activity_date" value="{{ item.stop.start_date }}"></div>
+                    <div class="field"><label>Time</label><input type="time" name="activity_time"></div>
+                    <div class="field"><label>Cost ₹</label><input type="number" name="cost" min="0" step="0.01" value="0"></div>
+                    <div class="field"><label>Duration Hours</label><input type="number" name="duration_hours" min="0.5" step="0.5" value="1"></div>
+                    <div class="field wide"><label>Description</label><input type="text" name="description" placeholder="Short activity note"></div>
+                    <div class="form-actions wide"><button class="btn primary" type="submit">+ Add Activity</button></div>
+                </form>
+                {% if item.activities %}
+                    <div class="simple-table-wrap">
+                        <table class="simple-table">
+                            <thead><tr><th>Time</th><th>Activity</th><th>Category</th><th>Cost</th><th></th></tr></thead>
+                            <tbody>
+                            {% for activity in item.activities %}
+                                <tr>
+                                    <td>{{ activity.activity_date or '-' }} {{ activity.activity_time or '' }}</td>
+                                    <td>{{ activity.title }}</td>
+                                    <td>{{ activity.category }}</td>
+                                    <td>₹{{ '%.2f'|format(activity.cost or 0) }}</td>
+                                    <td>
+                                        <form method="post" action="{{ url_for('delete_activity', activity_id=activity.id) }}">
+                                            <button class="link-danger" type="submit">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </details>
+        {% endfor %}
+    {% else %}
+        <p class="muted">Add a stop first to assign activities.</p>
+    {% endif %}
+</section>
+
+<section id="bookings" class="panel">
+    <div class="section-title split">
+        <div><h2>Booking</h2><p>Add hotel, transport, restaurant or activity booking details for this trip.</p></div>
+        <a class="btn small ghost" href="{{ url_for('bookings') }}">All Bookings</a>
+    </div>
+    <form class="form-grid compact-form" method="post" action="{{ url_for('add_booking', trip_id=trip.id) }}">
+        <div class="field"><label>Booking Type</label>
+            <select name="booking_type">
+                <option>Hotel</option>
+                <option>Transport</option>
+                <option>Flight</option>
+                <option>Train</option>
+                <option>Bus</option>
+                <option>Activity</option>
+                <option>Restaurant</option>
+                <option>Other</option>
+            </select>
+        </div>
+        <div class="field"><label>Provider / Name</label><input type="text" name="provider" placeholder="Example: Taj Hotel / Indigo / IRCTC" required></div>
+        <div class="field"><label>Location</label><input type="text" name="location" placeholder="Example: Chennai / Goa"></div>
+        <div class="field"><label>Start Date</label><input type="date" name="start_date" value="{{ trip.start_date }}"></div>
+        <div class="field"><label>End Date</label><input type="date" name="end_date" value="{{ trip.end_date }}"></div>
+        <div class="field"><label>Confirmation No.</label><input type="text" name="confirmation_no" placeholder="PNR / booking ID"></div>
+        <div class="field"><label>Cost ₹</label><input type="number" name="cost" min="0" step="0.01" value="0"></div>
+        <div class="field"><label>Status</label>
+            <select name="status">
+                <option>Planned</option>
+                <option>Confirmed</option>
+                <option>Paid</option>
+                <option>Cancelled</option>
+            </select>
+        </div>
+        <div class="field wide"><label>Notes</label><input type="text" name="notes" placeholder="Check-in time, seat number, contact number, etc."></div>
+        <div class="form-actions wide"><button class="btn primary" type="submit">+ Add Booking</button></div>
+    </form>
+
+    <div class="section-title small-gap">
+        <h3>Saved Bookings</h3>
+        <p>Total booking cost: <strong>₹{{ '%.2f'|format(booking_total) }}</strong></p>
+    </div>
+    {% if bookings %}
+        <div class="simple-table-wrap">
+            <table class="simple-table">
+                <thead><tr><th>Type</th><th>Provider</th><th>Location</th><th>Date</th><th>Booking ID</th><th>Status</th><th>Cost</th><th></th></tr></thead>
+                <tbody>
+                {% for booking in bookings %}
+                    <tr>
+                        <td>{{ booking.booking_type }}</td>
+                        <td>
+                            <strong>{{ booking.provider }}</strong>
+                            {% if booking.notes %}<small>{{ booking.notes }}</small>{% endif %}
+                        </td>
+                        <td>{{ booking.location or '-' }}</td>
+                        <td>{{ booking.start_date or '-' }}{% if booking.end_date %} → {{ booking.end_date }}{% endif %}</td>
+                        <td>{{ booking.confirmation_no or '-' }}</td>
+                        <td><span class="badge">{{ booking.status }}</span></td>
+                        <td>₹{{ '%.2f'|format(booking.cost or 0) }}</td>
+                        <td>
+                            <form method="post" action="{{ url_for('delete_booking', booking_id=booking.id) }}" onsubmit="return confirm('Delete this booking?')">
+                                <button class="link-danger" type="submit">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted">No bookings saved for this trip yet.</p>
+    {% endif %}
+</section>
+
+<section id="budget" class="panel">
+    <div class="section-title"><h2>Trip Budget & Cost Breakdown</h2><p>Monitor transport, stay, meals and activities. Activity costs from itinerary are added automatically.</p></div>
+    <div class="budget-layout">
+        <form class="form-grid compact-form" method="post" action="{{ url_for('update_budget', trip_id=trip.id) }}">
+            <div class="field"><label>Transport ₹</label><input type="number" name="transport_budget" step="0.01" min="0" value="{{ trip.transport_budget or 0 }}"></div>
+            <div class="field"><label>Stay ₹</label><input type="number" name="stay_budget" step="0.01" min="0" value="{{ trip.stay_budget or 0 }}"></div>
+            <div class="field"><label>Meals ₹</label><input type="number" name="meals_budget" step="0.01" min="0" value="{{ trip.meals_budget or 0 }}"></div>
+            <div class="field"><label>Planned Activity Budget ₹</label><input type="number" name="activities_budget" step="0.01" min="0" value="{{ trip.activities_budget or 0 }}"></div>
+            <div class="form-actions wide"><button class="btn primary" type="submit">Update Budget</button></div>
+        </form>
+        <div class="budget-summary">
+            <canvas id="budgetChart" height="220" data-budget='{{ budget|tojson }}'></canvas>
+            <div class="stats-grid mini">
+                <div class="stat-card"><span>Total</span><strong>₹ {{ '%.2f'|format(budget.total) }}</strong></div>
+                <div class="stat-card"><span>Average / Day</span><strong>₹ {{ '%.2f'|format(budget.average_per_day) }}</strong></div>
+            </div>
+            {% if budget.average_per_day > 5000 %}
+                <div class="flash warning">Budget alert: Average daily cost is above ₹5,000.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section id="checklist" class="panel">
+    <div class="section-title split">
+        <div><h2>Packing Checklist</h2><p>Add items, mark packed, remove or reset checklist for reuse.</p></div>
+        <form method="post" action="{{ url_for('reset_checklist', trip_id=trip.id) }}"><button class="btn small ghost" type="submit">Reset</button></form>
+    </div>
+    <form class="inline-form" method="post" action="{{ url_for('add_checklist_item', trip_id=trip.id) }}">
+        <input type="text" name="item" placeholder="Example: Passport / Charger / Jacket" required>
+        <select name="category"><option>Documents</option><option>Clothing</option><option>Electronics</option><option>Health</option><option>General</option></select>
+        <button class="btn primary" type="submit">Add</button>
+    </form>
+    <div class="checklist">
+        {% for item in checklist %}
+            <div class="check-row {{ 'done' if item.packed else '' }}">
+                <form method="post" action="{{ url_for('toggle_checklist_item', item_id=item.id) }}"><button type="submit" class="check-btn">{{ '✓' if item.packed else '○' }}</button></form>
+                <span>{{ item.item }}</span>
+                <small>{{ item.category }}</small>
+                <form method="post" action="{{ url_for('delete_checklist_item', item_id=item.id) }}"><button class="link-danger" type="submit">Delete</button></form>
+            </div>
+        {% else %}
+            <p class="muted">No checklist items yet.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section id="notes" class="panel">
+    <div class="section-title"><h2>Trip Notes / Journal</h2><p>Save hotel check-in info, local contacts and day-specific reminders.</p></div>
+    <form class="form-grid compact-form" method="post" action="{{ url_for('add_note', trip_id=trip.id) }}">
+        <div class="field"><label>Title</label><input type="text" name="title" required placeholder="Example: Hotel details"></div>
+        <div class="field"><label>Attach to stop</label>
+            <select name="stop_id"><option value="">Whole trip</option>{% for item in stop_data %}<option value="{{ item.stop.id }}">{{ item.stop.city_name }}</option>{% endfor %}</select>
+        </div>
+        <div class="field wide"><label>Note</label><textarea name="body" rows="3" required placeholder="Write reminder here"></textarea></div>
+        <div class="form-actions wide"><button class="btn primary" type="submit">Save Note</button></div>
+    </form>
+    <div class="note-list">
+        {% for note in notes %}
+            <article class="note-card">
+                <div class="split"><h3>{{ note.title }}</h3><small>{{ note.updated_at }}</small></div>
+                <p>{{ note.body }}</p>
+                <form method="post" action="{{ url_for('delete_note', note_id=note.id) }}"><button class="link-danger" type="submit">Delete Note</button></form>
+            </article>
+        {% else %}
+            <p class="muted">No notes saved yet.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section id="share" class="panel">
+    <div class="section-title"><h2>Shared / Public Itinerary</h2><p>Create a public read-only URL so friends can view or copy the plan.</p></div>
+    <form method="post" action="{{ url_for('toggle_share', trip_id=trip.id) }}">
+        <button class="btn {{ 'danger' if trip.is_public else 'primary' }}" type="submit">{{ 'Disable Public Link' if trip.is_public else 'Enable Public Link' }}</button>
+    </form>
+    {% if trip.is_public %}
+        <div class="share-box">
+            <input id="publicUrl" readonly value="{{ url_for('public_trip', slug=trip.public_slug, _external=True) }}">
+            <button class="btn ghost" onclick="copyPublicUrl()" type="button">Copy URL</button>
+            <a class="btn primary" href="{{ url_for('public_trip', slug=trip.public_slug) }}" target="_blank">Open Public View</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script>drawBudgetChart();</script>
+{% endblock %}

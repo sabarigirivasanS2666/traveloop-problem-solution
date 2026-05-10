@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}My Trips - Traveloop{% endblock %}
+{% block content %}
+<section class="page-head split">
+    <div>
+        <span class="eyebrow">My Trips</span>
+        <h1>Manage your itineraries</h1>
+        <p>Open, edit, share or delete your created travel plans.</p>
+    </div>
+    <a class="btn primary" href="{{ url_for('create_trip') }}">+ Create Trip</a>
+</section>
+
+{% if trips %}
+<section class="trip-grid">
+    {% for trip in trips %}
+        <article class="trip-card">
+            {% if trip.cover_photo %}
+                <img class="trip-cover" src="{{ url_for('static', filename='uploads/' ~ trip.cover_photo) }}" alt="Trip cover">
+            {% endif %}
+            <div class="trip-card-body">
+                <div class="badge-row">
+                    <span class="badge">{{ trip.destination_count }} destinations</span>
+                    {% if trip.is_public %}<span class="badge success">Public</span>{% endif %}
+                </div>
+                <h2>{{ trip.name }}</h2>
+                <p>{{ trip.description or 'No description added yet.' }}</p>
+                <small>{{ trip.start_date }} → {{ trip.end_date }}</small>
+                <div class="budget-line">Estimated: ₹ {{ '%.2f'|format(budgets[trip.id].total) }}</div>
+                <div class="card-actions">
+                    <a class="btn small primary" href="{{ url_for('trip_detail', trip_id=trip.id) }}">View / Edit</a>
+                    <form method="post" action="{{ url_for('delete_trip', trip_id=trip.id) }}" onsubmit="return confirm('Delete this trip?')">
+                        <button class="btn small danger" type="submit">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </article>
+    {% endfor %}
+</section>
+{% else %}
+<div class="empty-state panel">
+    <h2>No trips found</h2>
+    <p>Create a trip to start building your travel timeline.</p>
+    <a class="btn primary" href="{{ url_for('create_trip') }}">Create your first trip</a>
+</div>
+{% endif %}
+{% endblock %}

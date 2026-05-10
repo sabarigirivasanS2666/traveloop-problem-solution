@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - Traveloop{% endblock %}
+{% block content %}
+<section class="page-head">
+    <span class="eyebrow">Admin / Analytics Dashboard</span>
+    <h1>Platform usage overview</h1>
+    <p>Monitor app adoption, popular cities and user activity.</p>
+</section>
+
+<section class="stats-grid">
+    <div class="stat-card"><span>Users</span><strong>{{ stats.users }}</strong></div>
+    <div class="stat-card"><span>Trips Created</span><strong>{{ stats.trips }}</strong></div>
+    <div class="stat-card"><span>Stops Added</span><strong>{{ stats.stops }}</strong></div>
+    <div class="stat-card"><span>Activities Added</span><strong>{{ stats.activities }}</strong></div>
+    <div class="stat-card"><span>Bookings Added</span><strong>{{ stats.bookings }}</strong></div>
+</section>
+
+<section class="two-col">
+    <div class="panel">
+        <div class="section-title"><h2>Top Cities</h2></div>
+        <canvas id="cityChart" height="220" data-labels='{{ top_cities|map(attribute="city_name")|list|tojson }}' data-values='{{ top_cities|map(attribute="count")|list|tojson }}'></canvas>
+        {% if not top_cities %}<p class="muted">No city data yet.</p>{% endif %}
+    </div>
+    <div class="panel">
+        <div class="section-title"><h2>Top Activities</h2></div>
+        <canvas id="activityChart" height="220" data-labels='{{ top_activities|map(attribute="title")|list|tojson }}' data-values='{{ top_activities|map(attribute="count")|list|tojson }}'></canvas>
+        {% if not top_activities %}<p class="muted">No activity data yet.</p>{% endif %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-title"><h2>User Management</h2></div>
+    <div class="simple-table-wrap">
+        <table class="simple-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Trips</th><th>Created</th><th>Action</th></tr></thead>
+            <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td><span class="badge">{{ user.role }}</span></td>
+                    <td>{{ user.trip_count }}</td>
+                    <td>{{ user.created_at }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('toggle_user_role', user_id=user.id) }}">
+                            <button class="btn small ghost" type="submit">Toggle Role</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-title"><h2>Recent Trips</h2></div>
+    <div class="simple-table-wrap">
+        <table class="simple-table">
+            <thead><tr><th>Trip</th><th>User</th><th>Date Range</th><th>Stops</th><th>Public</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for trip in trips %}
+                <tr>
+                    <td>{{ trip.name }}</td>
+                    <td>{{ trip.owner_name }}</td>
+                    <td>{{ trip.start_date }} → {{ trip.end_date }}</td>
+                    <td>{{ trip.destination_count }}</td>
+                    <td>{{ 'Yes' if trip.is_public else 'No' }}</td>
+                    <td><a class="btn small primary" href="{{ url_for('trip_detail', trip_id=trip.id) }}">Open</a></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">No trips yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>drawAdminCharts();</script>
+{% endblock %}

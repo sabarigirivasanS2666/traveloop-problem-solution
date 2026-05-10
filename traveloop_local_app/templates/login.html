@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Login - Traveloop{% endblock %}
+{% block content %}
+<div class="auth-shell">
+    <form class="auth-card" method="post">
+        <h1>Login</h1>
+        <p>Access your personal travel plans.</p>
+        <label>Email</label>
+        <input type="email" name="email" placeholder="you@example.com" required>
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+        <button class="btn primary full" type="submit">Login</button>
+        <div class="auth-links">
+            <a href="{{ url_for('signup') }}">Create account</a>
+            <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+        </div>
+
+    </form>
+</div>
+{% endblock %}

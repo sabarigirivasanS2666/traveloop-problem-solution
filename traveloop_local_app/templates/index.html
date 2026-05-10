@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Traveloop - Personalized Travel Planning{% endblock %}
+{% block content %}
+<section class="hero">
+    <div class="hero-copy">
+        <span class="eyebrow">Personalized Travel Planning Made Easy</span>
+        <h1>Dream, design, organize, and share your trips in one local app.</h1>
+        <p>Traveloop helps travelers create multi-city itineraries, add activities, track budgets, maintain packing checklists, and publish read-only public plans.</p>
+        <div class="hero-actions">
+            <a class="btn primary" href="{{ url_for('signup') }}">Create Account</a>
+            <a class="btn ghost" href="{{ url_for('login') }}">Login</a>
+        </div>
+    </div>
+    <div class="hero-card">
+        <div class="mini-calendar">
+            <div>Day 1 <strong>Chennai</strong></div>
+            <div>Day 2 <strong>Bengaluru</strong></div>
+            <div>Day 3 <strong>Mysuru</strong></div>
+        </div>
+        <div class="budget-preview">
+            <span>Total Budget</span>
+            <strong>₹ 25,000</strong>
+            <p>Transport • Stay • Meals • Activities</p>
+        </div>
+    </div>
+</section>
+
+<section class="feature-grid">
+    <article class="card"><h3>Multi-city itinerary</h3><p>Add stops, dates, activities and timeline order.</p></article>
+    <article class="card"><h3>Budget breakdown</h3><p>Track transport, stay, meals and activity costs.</p></article>
+    <article class="card"><h3>Checklist & notes</h3><p>Plan packing items and save important trip reminders.</p></article>
+    <article class="card"><h3>Public sharing</h3><p>Share a read-only itinerary link or copy a public trip.</p></article>
+</section>
+{% endblock %}

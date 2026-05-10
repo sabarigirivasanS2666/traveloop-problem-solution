@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Create Trip - Traveloop{% endblock %}
+{% block content %}
+<section class="page-head">
+    <span class="eyebrow">Create Trip</span>
+    <h1>Start a personalized travel plan</h1>
+    <p>Add name, travel dates, description and estimated budget.</p>
+</section>
+
+<form class="panel form-grid" method="post" enctype="multipart/form-data">
+    <div class="field wide">
+        <label>Trip Name</label>
+        <input type="text" name="name" placeholder="Example: South India Heritage Trip" required>
+    </div>
+    <div class="field">
+        <label>Start Date</label>
+        <input type="date" name="start_date" required>
+    </div>
+    <div class="field">
+        <label>End Date</label>
+        <input type="date" name="end_date" required>
+    </div>
+    <div class="field wide">
+        <label>Description</label>
+        <textarea name="description" rows="4" placeholder="Write a short plan for this trip"></textarea>
+    </div>
+    <div class="field wide">
+        <label>Cover Photo Upload (optional)</label>
+        <input type="file" name="cover_photo" accept="image/*">
+    </div>
+    <div class="field"><label>Transport Budget ₹</label><input type="number" name="transport_budget" min="0" step="0.01" value="0"></div>
+    <div class="field"><label>Stay Budget ₹</label><input type="number" name="stay_budget" min="0" step="0.01" value="0"></div>
+    <div class="field"><label>Meals Budget ₹</label><input type="number" name="meals_budget" min="0" step="0.01" value="0"></div>
+    <div class="field"><label>Activities Budget ₹</label><input type="number" name="activities_budget" min="0" step="0.01" value="0"></div>
+    <div class="form-actions wide">
+        <a class="btn ghost" href="{{ url_for('trips') }}">Cancel</a>
+        <button class="btn primary" type="submit">Save Trip</button>
+    </div>
+</form>
+{% endblock %}

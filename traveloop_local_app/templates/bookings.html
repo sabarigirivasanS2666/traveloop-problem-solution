@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Bookings - Traveloop{% endblock %}
+{% block content %}
+<section class="page-head split">
+    <div>
+        <span class="eyebrow">Booking</span>
+        <h1>Booking Manager</h1>
+        <p>Track hotel, transport, flight, train, bus, restaurant and activity bookings for your trips.</p>
+    </div>
+    <a class="btn primary" href="{{ url_for('trips') }}">Open My Trips</a>
+</section>
+
+<section class="stats-grid">
+    <div class="stat-card"><span>Total Bookings</span><strong>{{ bookings|length }}</strong></div>
+    <div class="stat-card"><span>Total Booking Cost</span><strong>₹ {{ '%.2f'|format(total_booking_cost) }}</strong></div>
+    <div class="stat-card"><span>Trips Available</span><strong>{{ trips|length }}</strong></div>
+</section>
+
+<section class="panel">
+    <div class="section-title">
+        <h2>How to add a booking</h2>
+    </div>
+    {% if trips %}
+        <div class="trip-list compact">
+            {% for trip in trips %}
+                <a class="trip-row" href="{{ url_for('trip_detail', trip_id=trip.id, _anchor='bookings') }}">
+                    <div>
+                        <strong>{{ trip.name }}</strong>
+                        <small>{{ trip.start_date }} → {{ trip.end_date }}</small>
+                    </div>
+                    <span>Add Booking</span>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state inline">
+            <p>Create a trip first. Then you can add bookings inside that trip.</p>
+            <a class="btn primary" href="{{ url_for('create_trip') }}">Create Trip</a>
+        </div>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <div class="section-title"><h2>All Saved Bookings</h2></div>
+    {% if bookings %}
+        <div class="simple-table-wrap">
+            <table class="simple-table">
+                <thead>
+                    <tr>
+                        <th>Trip</th>
+                        <th>Type</th>
+                        <th>Provider</th>
+                        <th>Location</th>
+                        <th>Date</th>
+                        <th>Booking ID</th>
+                        <th>Status</th>
+                        <th>Cost</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for booking in bookings %}
+                    <tr>
+                        <td><a href="{{ url_for('trip_detail', trip_id=booking.trip_id, _anchor='bookings') }}">{{ booking.trip_name }}</a></td>
+                        <td>{{ booking.booking_type }}</td>
+                        <td>
+                            <strong>{{ booking.provider }}</strong>
+                            {% if booking.notes %}<small>{{ booking.notes }}</small>{% endif %}
+                        </td>
+                        <td>{{ booking.location or '-' }}</td>
+                        <td>{{ booking.start_date or '-' }}{% if booking.end_date %} → {{ booking.end_date }}{% endif %}</td>
+                        <td>{{ booking.confirmation_no or '-' }}</td>
+                        <td><span class="badge">{{ booking.status }}</span></td>
+                        <td>₹{{ '%.2f'|format(booking.cost or 0) }}</td>
+                        <td>
+                            <form method="post" action="{{ url_for('delete_booking', booking_id=booking.id) }}" onsubmit="return confirm('Delete this booking?')">
+                                <button class="link-danger" type="submit">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted">No bookings saved yet.</p>
+    {% endif %}
+</section>
+{% endblock %}
